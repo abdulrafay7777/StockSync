@@ -5,3 +5,4 @@
   "build": "cd client && npm install --legacy-peer-deps && npm run build",
   "install-all": "npm install --legacy-peer-deps && cd client && npm install --legacy-peer-deps && cd ../server && npm install"
 }
+}
