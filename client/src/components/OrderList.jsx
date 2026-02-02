@@ -21,10 +21,13 @@ const OrderList = () => {
   const fetchOrders = async () => {
     try {
       const { data } = await axios.get('/orders');
-      setOrders(data);
+      // FIXED: Ensure we always have an array
+      setOrders(Array.isArray(data) ? data : []);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching orders");
+      setOrders([]); // Fallback to empty array on error
+      setLoading(false);
     }
   };
 
@@ -147,11 +150,12 @@ const OrderList = () => {
   };
 
   const openScreenshot = (url) => {
-    const fullUrl = url.startsWith('http') ? url : `http://localhost:5000${url}`;
+    // FIXED: Use current origin instead of hardcoded localhost for Vercel deployment
+    const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
     setScreenshotModal({ isOpen: true, url: fullUrl });
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Loading Orders...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-500 font-bold">Loading Orders...</div>;
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mt-8 relative">
@@ -177,114 +181,115 @@ const OrderList = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {orders.map((order) => {
-              
-              let productData = null;
-              let displayTitle = "";
-              
-              if (order.productId && typeof order.productId === 'object') {
-                productData = order.productId;
-              } 
-              else if (order.product && typeof order.product === 'object') {
-                productData = order.product;
-              }
+            {/* FIXED: Added Array.isArray check to prevent map crash */}
+            {Array.isArray(orders) && orders.length > 0 ? (
+              orders.map((order) => {
+                let productData = null;
+                let displayTitle = "";
+                
+                if (order.productId && typeof order.productId === 'object') {
+                  productData = order.productId;
+                } else if (order.product && typeof order.product === 'object') {
+                  productData = order.product;
+                }
 
-              if (productData) {
-                displayTitle = productData.title;
-              } else {
-                const rawId = order.productId || order.product;
-                displayTitle = rawId ? `(ID: ${rawId.toString().slice(-6)}...)` : "(Product Deleted)";
-              }
+                if (productData) {
+                  displayTitle = productData.title;
+                } else {
+                  const rawId = order.productId || order.product;
+                  displayTitle = rawId ? `(ID: ${rawId.toString().slice(-6)}...)` : "(Product Deleted)";
+                }
 
-              const productPrice = productData ? productData.price : 0;
-              const totalBill = productPrice * order.quantity;
-              const isDataMissing = !productData;
+                const productPrice = productData ? productData.price : 0;
+                const totalBill = productPrice * order.quantity;
+                const isDataMissing = !productData;
 
-              return (
-                <tr key={order._id} className="hover:bg-blue-50 transition group">
-                  <td className="p-4">
-                    <div className="font-bold text-gray-800">{order.customerName}</div>
-                    <div className="text-xs text-gray-500">{order.phone}</div>
-                    <div className="text-xs text-gray-400 truncate w-40" title={order.address}>{order.address}</div>
-                  </td>
+                return (
+                  <tr key={order._id} className="hover:bg-blue-50 transition group">
+                    <td className="p-4">
+                      <div className="font-bold text-gray-800">{order.customerName}</div>
+                      <div className="text-xs text-gray-500">{order.phone}</div>
+                      <div className="text-xs text-gray-400 truncate w-40" title={order.address}>{order.address}</div>
+                    </td>
 
-                  <td className="p-4">
-                    <div className={`font-medium ${isDataMissing ? 'text-orange-500 italic' : 'text-gray-700'}`}>
-                      {displayTitle}
-                    </div>
-                    <div className="text-xs text-gray-500">Qty: {order.quantity}</div>
-                  </td>
-
-                  <td className="p-4 font-bold text-green-600">
-                    PKR {totalBill}
-                  </td>
-
-                  <td className="p-4">
-                    {order.paymentMethod === 'COD' ? (
-                      <span className="flex items-center gap-1 text-xs font-bold text-gray-500 bg-gray-200 px-2 py-1 rounded-md w-max">
-                        <FaMoneyBillWave /> COD
-                      </span>
-                    ) : (
-                      <div className="flex flex-col gap-1">
-                        <span className="flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-md w-max">
-                          <FaCreditCard /> Online
-                        </span>
-                        
-                        {order.screenshotUrl && order.screenshotUrl !== "OCR_VERIFIED" && order.screenshotUrl !== "OCR_AMOUNT_MATCHED" ? (
-                           <button onClick={() => openScreenshot(order.screenshotUrl)} className="text-[10px] text-blue-600 flex items-center gap-1 font-bold hover:underline cursor-pointer bg-blue-50 px-2 py-1 rounded border border-blue-100">
-                             <FaEye /> View Proof
-                           </button>
-                        ) : (
-                           (order.screenshotUrl === "OCR_VERIFIED" || order.screenshotUrl === "OCR_AMOUNT_MATCHED") && (
-                             <span className="text-[10px] text-green-600 flex items-center gap-1 font-bold">
-                               <FaCheckCircle /> System Verified
-                             </span>
-                           )
-                        )}
+                    <td className="p-4">
+                      <div className={`font-medium ${isDataMissing ? 'text-orange-500 italic' : 'text-gray-700'}`}>
+                        {displayTitle}
                       </div>
-                    )}
-                  </td>
+                      <div className="text-xs text-gray-500">Qty: {order.quantity}</div>
+                    </td>
 
-                  <td className="p-4">
-                    {/* BUTTONS SECTION */}
-                    <div className="flex justify-center items-center gap-3">
-                      
-                      {/* PDF BUTTON (BLUE) */}
-                      <button 
-                        onClick={() => handlePrint(order)} 
-                        className={`p-3 rounded-xl shadow-md transition transform active:scale-95 flex items-center justify-center
-                          ${isDataMissing 
-                            ? 'bg-orange-100 text-orange-400 cursor-not-allowed opacity-50' 
-                            : 'bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-200'
-                          }`}
-                        title="Download Invoice"
-                      >
-                        <FaFilePdf size={20} />
-                      </button>
+                    <td className="p-4 font-bold text-green-600">
+                      PKR {totalBill}
+                    </td>
 
-                      {/* SHIP BUTTON (GREEN) */}
-                      <button 
-                        onClick={() => handleShipOrder(order._id)} 
-                        className="p-3 bg-green-100 text-green-600 rounded-xl shadow-md border border-green-200 hover:bg-green-600 hover:text-white transition transform active:scale-95 flex items-center justify-center"
-                        title="Mark Shipped"
-                      >
-                        <FaCheckCircle size={20} />
-                      </button>
+                    <td className="p-4">
+                      {order.paymentMethod === 'COD' ? (
+                        <span className="flex items-center gap-1 text-xs font-bold text-gray-500 bg-gray-200 px-2 py-1 rounded-md w-max">
+                          <FaMoneyBillWave /> COD
+                        </span>
+                      ) : (
+                        <div className="flex flex-col gap-1">
+                          <span className="flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-md w-max">
+                            <FaCreditCard /> Online
+                          </span>
+                          
+                          {order.screenshotUrl && order.screenshotUrl !== "OCR_VERIFIED" && order.screenshotUrl !== "OCR_AMOUNT_MATCHED" ? (
+                             <button onClick={() => openScreenshot(order.screenshotUrl)} className="text-[10px] text-blue-600 flex items-center gap-1 font-bold hover:underline cursor-pointer bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                               <FaEye /> View Proof
+                             </button>
+                          ) : (
+                             (order.screenshotUrl === "OCR_VERIFIED" || order.screenshotUrl === "OCR_AMOUNT_MATCHED") && (
+                               <span className="text-[10px] text-green-600 flex items-center gap-1 font-bold">
+                                 <FaCheckCircle /> System Verified
+                               </span>
+                             )
+                          )}
+                        </div>
+                      )}
+                    </td>
 
-                      {/* RETURN BUTTON (RED) */}
-                      <button 
-                        onClick={() => handleReturn(order)} 
-                        className="p-3 bg-red-100 text-red-600 rounded-xl shadow-md border border-red-200 hover:bg-red-600 hover:text-white transition transform active:scale-95 flex items-center justify-center"
-                        title="Return / Restock"
-                      >
-                        <FaUndo size={20} />
-                      </button>
+                    <td className="p-4">
+                      <div className="flex justify-center items-center gap-3">
+                        <button 
+                          onClick={() => handlePrint(order)} 
+                          className={`p-3 rounded-xl shadow-md transition transform active:scale-95 flex items-center justify-center
+                            ${isDataMissing 
+                              ? 'bg-orange-100 text-orange-400 cursor-not-allowed opacity-50' 
+                              : 'bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-200'
+                            }`}
+                          title="Download Invoice"
+                        >
+                          <FaFilePdf size={20} />
+                        </button>
 
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                        <button 
+                          onClick={() => handleShipOrder(order._id)} 
+                          className="p-3 bg-green-100 text-green-600 rounded-xl shadow-md border border-green-200 hover:bg-green-600 hover:text-white transition transform active:scale-95 flex items-center justify-center"
+                          title="Mark Shipped"
+                        >
+                          <FaCheckCircle size={20} />
+                        </button>
+
+                        <button 
+                          onClick={() => handleReturn(order)} 
+                          className="p-3 bg-red-100 text-red-600 rounded-xl shadow-md border border-red-200 hover:bg-red-600 hover:text-white transition transform active:scale-95 flex items-center justify-center"
+                          title="Return / Restock"
+                        >
+                          <FaUndo size={20} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan="5" className="p-8 text-center text-gray-500 italic">
+                  No orders found.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

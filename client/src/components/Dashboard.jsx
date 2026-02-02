@@ -20,14 +20,18 @@ const Dashboard = () => {
   const fetchProducts = async () => {
     try {
       const { data } = await axios.get('/products');
-      setProducts(data);
+      // Ensure we only set state if data is an array
+      setProducts(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching products:", error);
+      setProducts([]); // Fallback to empty array on error
     }
   };
 
   const copyOrderLink = (id) => {
-    navigator.clipboard.writeText(`http://localhost:5173/order/${id}`);
+    // Uses the current website URL instead of hardcoded localhost
+    const link = `${window.location.origin}/order/${id}`;
+    navigator.clipboard.writeText(link);
     toast.success("Link Copied!");
   };
 
@@ -80,13 +84,10 @@ const Dashboard = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 relative">
-      
-      {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
           <FaBoxOpen className="text-blue-600" /> Admin Dashboard
         </h1>
-        
         <button 
           onClick={() => setIsModalOpen(true)}
           className="bg-green-600 text-white px-5 py-3 rounded-xl hover:bg-green-700 transition flex items-center gap-2 shadow-lg font-bold transform active:scale-95"
@@ -95,12 +96,10 @@ const Dashboard = () => {
         </button>
       </div>
 
-      {/* LIVE INVENTORY TABLE */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 mb-8">
         <div className="p-4 bg-gray-50 border-b border-gray-200">
           <h2 className="font-bold text-gray-700 text-lg">Live Inventory</h2>
         </div>
-        
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-gray-100 text-gray-600 uppercase font-bold">
@@ -112,54 +111,55 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {products.map((p) => (
-                <tr key={p._id} className="hover:bg-blue-50/50 transition">
-                  <td className="p-4 font-bold text-gray-800">{p.title}</td>
-                  <td className="p-4 text-gray-600 font-medium text-base">PKR {p.price}</td>
-                  
-                  <td className="p-4">
-                    {/* UPDATED: 'font-bold' for more visibility without being extreme */}
-                    <span className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wide ${
-                      p.stock.available < 5 
-                        ? 'bg-red-100 text-red-700 border border-red-200' 
-                        : 'bg-blue-100 text-blue-700 border border-blue-200'
-                    }`}>
-                      {p.stock.available} Units Available
-                    </span>
-                  </td>
-
-                  <td className="p-4">
-                    <div className="flex justify-center items-center gap-3">
-                      <button 
-                        onClick={() => copyOrderLink(p._id)} 
-                        className="flex items-center gap-2 bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2.5 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm font-bold text-xs transform active:scale-95"
-                      >
-                        <FaCopy size={16} /> Copy Link
-                      </button>
-
-                      <button 
-                        onClick={() => handleDeleteTrigger(p._id)} 
-                        className="flex items-center gap-2 bg-red-50 text-red-500 border border-red-200 px-4 py-2.5 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-sm font-bold text-xs transform active:scale-95"
-                      >
-                        <FaTrash size={16} /> Delete
-                      </button>
-                    </div>
+              {Array.isArray(products) && products.length > 0 ? (
+                products.map((p) => (
+                  <tr key={p._id} className="hover:bg-blue-50/50 transition">
+                    <td className="p-4 font-bold text-gray-800">{p.title}</td>
+                    <td className="p-4 text-gray-600 font-medium text-base">PKR {p.price}</td>
+                    <td className="p-4">
+                      <span className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wide ${
+                        p.stock?.available < 5 
+                          ? 'bg-red-100 text-red-700 border border-red-200' 
+                          : 'bg-blue-100 text-blue-700 border border-blue-200'
+                      }`}>
+                        {p.stock?.available || 0} Units Available
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex justify-center items-center gap-3">
+                        <button 
+                          onClick={() => copyOrderLink(p._id)} 
+                          className="flex items-center gap-2 bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2.5 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm font-bold text-xs transform active:scale-95"
+                        >
+                          <FaCopy size={16} /> Copy Link
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteTrigger(p._id)} 
+                          className="flex items-center gap-2 bg-red-50 text-red-500 border border-red-200 px-4 py-2.5 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-sm font-bold text-xs transform active:scale-95"
+                        >
+                          <FaTrash size={16} /> Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="4" className="p-8 text-center text-gray-500 italic">
+                    No products found. Add your first product above!
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
       </div>
-
       <OrderList />
-
       <AddProduct 
         isOpen={isModalOpen}  
         onClose={() => setIsModalOpen(false)} 
         onProductAdded={fetchProducts} 
       />
-
     </div>
   );
 };
