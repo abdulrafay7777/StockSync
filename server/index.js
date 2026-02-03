@@ -32,7 +32,6 @@ app.get('/', (req, res) => {
     res.send("API is running...");
 });
 
-// 3. EXPORT FOR VERCEL: Keep this as is
 const PORT = process.env.PORT || 5000;
 if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
