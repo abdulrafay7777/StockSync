@@ -37,5 +37,7 @@ if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 }
 
-const app = require('../server/index'); // Points to your server/index.js
+// Points to your server/index.js
+const app = require('../server/index'); 
+
 module.exports = app;
