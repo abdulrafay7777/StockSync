@@ -40,7 +40,7 @@
 
 const multer = require('multer');
 
-// Tell multer to hold the file in memory instead of saving it to a local folder
+// multer to hold the file in memory instead of saving it to a local folder
 const storage = multer.memoryStorage();
 
 const upload = multer({ storage: storage });
