@@ -3,7 +3,7 @@ import axios from '../api/axios';
 import toast from 'react-hot-toast';
 import { 
   FaCheckCircle, FaTruck, FaFilePdf, FaUndo, FaCreditCard, 
-  FaMoneyBillWave, FaEye, FaTimes, FaExclamationTriangle, FaMapMarkerAlt
+  FaMoneyBillWave, FaEye, FaTimes, FaExclamationTriangle, FaMapMarkerAlt, FaBox
 } from 'react-icons/fa';
 import { generateInvoice } from '../utils/invoiceGenerator'; 
 
@@ -160,15 +160,15 @@ const OrderList = () => {
         <h2 className="font-bold text-gray-700 text-lg flex items-center gap-2">
           <FaTruck className="text-blue-600" /> Incoming Orders
         </h2>
-        <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">
+        <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
           {orders.length} Pending
         </span>
       </div>
 
       {/* ========================================= */}
-      {/* 📱 MOBILE VIEW (Stacked Cards) */}
+      {/* 📱 MOBILE VIEW (Spaced Out Interactive Cards) */}
       {/* ========================================= */}
-      <div className="block sm:hidden divide-y divide-gray-100">
+      <div className="block sm:hidden bg-gray-50/50 p-4 space-y-5">
         {Array.isArray(orders) && orders.length > 0 ? (
           orders.map((order) => {
             let productData = null;
@@ -180,70 +180,95 @@ const OrderList = () => {
             const totalBill = productPrice * order.quantity;
 
             return (
-              <div key={order._id} className="p-4 flex flex-col gap-3 bg-white hover:bg-gray-50 transition">
+              <div key={order._id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4 relative overflow-hidden">
                 
                 {/* Header: Name & Total */}
                 <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-bold text-gray-800 text-base">{order.customerName}</div>
-                    <div className="text-xs text-gray-500">{order.phone}</div>
+                  <div className="pr-2">
+                    <div className="font-bold text-gray-900 text-lg leading-tight">{order.customerName}</div>
+                    <div className="text-xs text-gray-500 mt-1 font-medium tracking-wide">{order.phone}</div>
                   </div>
-                  <div className="font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-100 text-sm">
-                    PKR {totalBill}
+                  <div className="flex flex-col items-end">
+                    <div className="font-black text-green-600 text-base bg-green-50 px-2 py-1 rounded-lg border border-green-100">
+                      PKR {totalBill}
+                    </div>
+                    {/* Payment Badge placed neatly under the price */}
+                    <div className="mt-2">
+                      {order.paymentMethod === 'COD' ? (
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md border border-gray-200">
+                          <FaMoneyBillWave /> COD
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
+                          <FaCreditCard /> ONLINE
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Address Box */}
-                <div className="text-xs text-gray-600 bg-gray-50 p-2.5 rounded-lg border border-gray-100 flex gap-2">
-                  <FaMapMarkerAlt className="text-gray-400 mt-0.5 flex-shrink-0" />
-                  <span className="leading-tight">{order.address}</span>
-                </div>
-
-                {/* Item & Payment */}
-                <div className="flex justify-between items-end border-t border-gray-50 pt-2">
-                  <div>
-                    <div className={`text-sm font-bold ${!productData ? 'text-orange-500 italic' : 'text-gray-700'}`}>
+                {/* Item Details Box (Distinct colored area) */}
+                <div className="flex justify-between items-center bg-blue-50/50 p-3 rounded-xl border border-blue-100/50">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-blue-100 p-2 rounded-lg text-blue-500"><FaBox size={14}/></div>
+                    <div className={`text-sm font-bold ${!productData ? 'text-orange-500 italic' : 'text-gray-800'}`}>
                       {displayTitle}
                     </div>
-                    <div className="text-xs text-gray-500">Qty: {order.quantity}</div>
                   </div>
-                  <div>
-                    {order.paymentMethod === 'COD' ? (
-                      <span className="flex items-center gap-1 text-[10px] font-bold text-gray-500 bg-gray-200 px-2 py-1 rounded-md">
-                        <FaMoneyBillWave /> COD
-                      </span>
-                    ) : (
-                      <div className="flex flex-col items-end gap-1">
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-md">
-                          <FaCreditCard /> Online
-                        </span>
-                        {order.screenshotUrl && order.screenshotUrl !== "OCR_VERIFIED" && order.screenshotUrl !== "OCR_AMOUNT_MATCHED" ? (
-                           <button onClick={() => openScreenshot(order.screenshotUrl)} className="text-[10px] text-blue-600 flex items-center gap-1 font-bold underline">
-                             View Proof
-                           </button>
-                        ) : (
-                           (order.screenshotUrl === "OCR_VERIFIED" || order.screenshotUrl === "OCR_AMOUNT_MATCHED") && (
-                             <span className="text-[9px] text-green-600 flex items-center gap-1 font-bold">
-                               <FaCheckCircle /> Verified
-                             </span>
-                           )
-                        )}
-                      </div>
-                    )}
+                  <div className="text-xs font-bold text-blue-800 bg-blue-100 px-2.5 py-1 rounded-md">
+                    Qty: {order.quantity}
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-2 mt-2">
-                  <button onClick={() => handlePrint(order)} className="flex-1 py-2 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center border border-blue-100 active:bg-blue-100 active:scale-95 transition-transform"><FaFilePdf size={16} /></button>
-                  <button onClick={() => handleShipOrder(order._id)} className="flex-1 py-2 bg-green-50 text-green-600 rounded-lg flex items-center justify-center border border-green-100 active:bg-green-100 active:scale-95 transition-transform"><FaCheckCircle size={16} /></button>
-                  <button onClick={() => handleReturn(order)} className="flex-1 py-2 bg-red-50 text-red-600 rounded-lg flex items-center justify-center border border-red-100 active:bg-red-100 active:scale-95 transition-transform"><FaUndo size={16} /></button>
+                {/* Address (Clean text format) */}
+                <div className="flex items-start gap-2 text-sm text-gray-600 px-1">
+                  <FaMapMarkerAlt className="text-gray-400 mt-1 flex-shrink-0" />
+                  <span className="leading-snug">{order.address}</span>
                 </div>
+
+                {/* Proof of Payment Link (If Online) */}
+                {order.paymentMethod === 'ONLINE' && (
+                  <div className="px-1">
+                    {order.screenshotUrl && order.screenshotUrl !== "OCR_VERIFIED" && order.screenshotUrl !== "OCR_AMOUNT_MATCHED" ? (
+                        <button onClick={() => openScreenshot(order.screenshotUrl)} className="text-xs text-blue-600 flex items-center gap-1.5 font-bold hover:underline active:opacity-70">
+                          <FaEye /> Tap to View Payment Proof
+                        </button>
+                    ) : (
+                        (order.screenshotUrl === "OCR_VERIFIED" || order.screenshotUrl === "OCR_AMOUNT_MATCHED") && (
+                          <span className="text-xs text-green-600 flex items-center gap-1.5 font-bold">
+                            <FaCheckCircle /> System Verified Match
+                          </span>
+                        )
+                    )}
+                  </div>
+                )}
+
+                {/* Separator */}
+                <hr className="border-gray-100" />
+
+                {/* Action Buttons (Spaced out Grid) */}
+                <div className="grid grid-cols-3 gap-3">
+                  <button onClick={() => handlePrint(order)} className="py-2.5 bg-gray-50 text-gray-600 rounded-xl flex flex-col items-center justify-center border border-gray-200 active:bg-gray-100 active:scale-95 transition-all gap-1">
+                    <FaFilePdf size={16} />
+                    <span className="text-[10px] font-bold">Invoice</span>
+                  </button>
+                  <button onClick={() => handleShipOrder(order._id)} className="py-2.5 bg-green-50 text-green-600 rounded-xl flex flex-col items-center justify-center border border-green-200 active:bg-green-100 active:scale-95 transition-all shadow-sm gap-1">
+                    <FaCheckCircle size={16} />
+                    <span className="text-[10px] font-bold">Ship It</span>
+                  </button>
+                  <button onClick={() => handleReturn(order)} className="py-2.5 bg-red-50 text-red-600 rounded-xl flex flex-col items-center justify-center border border-red-200 active:bg-red-100 active:scale-95 transition-all gap-1">
+                    <FaUndo size={16} />
+                    <span className="text-[10px] font-bold">Restock</span>
+                  </button>
+                </div>
+
               </div>
             );
           })
         ) : (
-          <div className="p-8 text-center text-gray-500 italic text-sm">No orders found.</div>
+          <div className="p-10 text-center text-gray-500 italic text-sm bg-white rounded-2xl border border-gray-200">
+            No orders found. You're all caught up!
+          </div>
         )}
       </div>
 
