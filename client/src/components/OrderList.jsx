@@ -160,7 +160,8 @@ const OrderList = () => {
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mt-8 relative">
       
-      <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+      {/* RESPONSIVE HEADER */}
+      <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0 bg-gray-50">
         <h2 className="font-bold text-gray-700 text-lg flex items-center gap-2">
           <FaTruck className="text-blue-600" /> Incoming Orders
         </h2>
@@ -173,15 +174,14 @@ const OrderList = () => {
         <table className="min-w-full text-left text-sm">
           <thead className="bg-gray-100 text-gray-600 uppercase font-bold">
             <tr>
-              <th className="p-4">Customer</th>
-              <th className="p-4">Item</th>
-              <th className="p-4">Total</th>
-              <th className="p-4">Payment</th>
-              <th className="p-4 text-center">Actions</th>
+              <th className="p-3 sm:p-4 whitespace-nowrap">Customer</th>
+              <th className="p-3 sm:p-4 whitespace-nowrap">Item</th>
+              <th className="p-3 sm:p-4 whitespace-nowrap">Total</th>
+              <th className="p-3 sm:p-4 whitespace-nowrap">Payment</th>
+              <th className="p-3 sm:p-4 text-center whitespace-nowrap">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {/* FIXED: Added Array.isArray check to prevent map crash */}
             {Array.isArray(orders) && orders.length > 0 ? (
               orders.map((order) => {
                 let productData = null;
@@ -206,24 +206,24 @@ const OrderList = () => {
 
                 return (
                   <tr key={order._id} className="hover:bg-blue-50 transition group">
-                    <td className="p-4">
+                    <td className="p-3 sm:p-4 min-w-[150px]">
                       <div className="font-bold text-gray-800">{order.customerName}</div>
                       <div className="text-xs text-gray-500">{order.phone}</div>
-                      <div className="text-xs text-gray-400 truncate w-40" title={order.address}>{order.address}</div>
+                      <div className="text-xs text-gray-400 truncate w-32 sm:w-40" title={order.address}>{order.address}</div>
                     </td>
 
-                    <td className="p-4">
+                    <td className="p-3 sm:p-4 min-w-[120px]">
                       <div className={`font-medium ${isDataMissing ? 'text-orange-500 italic' : 'text-gray-700'}`}>
                         {displayTitle}
                       </div>
                       <div className="text-xs text-gray-500">Qty: {order.quantity}</div>
                     </td>
 
-                    <td className="p-4 font-bold text-green-600">
+                    <td className="p-3 sm:p-4 font-bold text-green-600 whitespace-nowrap">
                       PKR {totalBill}
                     </td>
 
-                    <td className="p-4">
+                    <td className="p-3 sm:p-4 min-w-[100px]">
                       {order.paymentMethod === 'COD' ? (
                         <span className="flex items-center gap-1 text-xs font-bold text-gray-500 bg-gray-200 px-2 py-1 rounded-md w-max">
                           <FaMoneyBillWave /> COD
@@ -249,34 +249,35 @@ const OrderList = () => {
                       )}
                     </td>
 
-                    <td className="p-4">
-                      <div className="flex justify-center items-center gap-3">
+                    <td className="p-3 sm:p-4">
+                      {/* RESPONSIVE ACTION BUTTONS */}
+                      <div className="flex justify-center items-center gap-2 sm:gap-3">
                         <button 
                           onClick={() => handlePrint(order)} 
-                          className={`p-3 rounded-xl shadow-md transition transform active:scale-95 flex items-center justify-center
+                          className={`p-2 sm:p-3 rounded-xl shadow-md transition transform active:scale-95 flex items-center justify-center
                             ${isDataMissing 
                               ? 'bg-orange-100 text-orange-400 cursor-not-allowed opacity-50' 
                               : 'bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-200'
                             }`}
                           title="Download Invoice"
                         >
-                          <FaFilePdf size={20} />
+                          <FaFilePdf size={18} />
                         </button>
 
                         <button 
                           onClick={() => handleShipOrder(order._id)} 
-                          className="p-3 bg-green-100 text-green-600 rounded-xl shadow-md border border-green-200 hover:bg-green-600 hover:text-white transition transform active:scale-95 flex items-center justify-center"
+                          className="p-2 sm:p-3 bg-green-100 text-green-600 rounded-xl shadow-md border border-green-200 hover:bg-green-600 hover:text-white transition transform active:scale-95 flex items-center justify-center"
                           title="Mark Shipped"
                         >
-                          <FaCheckCircle size={20} />
+                          <FaCheckCircle size={18} />
                         </button>
 
                         <button 
                           onClick={() => handleReturn(order)} 
-                          className="p-3 bg-red-100 text-red-600 rounded-xl shadow-md border border-red-200 hover:bg-red-600 hover:text-white transition transform active:scale-95 flex items-center justify-center"
+                          className="p-2 sm:p-3 bg-red-100 text-red-600 rounded-xl shadow-md border border-red-200 hover:bg-red-600 hover:text-white transition transform active:scale-95 flex items-center justify-center"
                           title="Return / Restock"
                         >
-                          <FaUndo size={20} />
+                          <FaUndo size={18} />
                         </button>
                       </div>
                     </td>
