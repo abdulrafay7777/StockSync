@@ -3,7 +3,7 @@ import axios from '../api/axios';
 import toast from 'react-hot-toast';
 import { 
   FaCheckCircle, FaTruck, FaFilePdf, FaUndo, FaCreditCard, 
-  FaMoneyBillWave, FaEye, FaTimes, FaExclamationTriangle
+  FaMoneyBillWave, FaEye, FaTimes, FaExclamationTriangle, FaMapMarkerAlt
 } from 'react-icons/fa';
 import { generateInvoice } from '../utils/invoiceGenerator'; 
 
@@ -21,17 +21,14 @@ const OrderList = () => {
   const fetchOrders = async () => {
     try {
       const { data } = await axios.get('/orders');
-      // FIXED: Ensure we always have an array
       setOrders(Array.isArray(data) ? data : []);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching orders");
-      setOrders([]); // Fallback to empty array on error
+      setOrders([]); 
       setLoading(false);
     }
   };
-
-  // --- ACTIONS ---
 
   const handleShipOrder = (orderId) => {
     toast((t) => (
@@ -150,7 +147,6 @@ const OrderList = () => {
   };
 
   const openScreenshot = (url) => {
-    // FIXED: Use current origin instead of hardcoded localhost for Vercel deployment
     const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
     setScreenshotModal({ isOpen: true, url: fullUrl });
   };
@@ -158,10 +154,9 @@ const OrderList = () => {
   if (loading) return <div className="p-8 text-center text-gray-500 font-bold">Loading Orders...</div>;
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mt-8 relative">
+    <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mt-8 w-full relative">
       
-      {/* RESPONSIVE HEADER */}
-      <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0 bg-gray-50">
+      <div className="p-4 sm:p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
         <h2 className="font-bold text-gray-700 text-lg flex items-center gap-2">
           <FaTruck className="text-blue-600" /> Incoming Orders
         </h2>
@@ -170,60 +165,134 @@ const OrderList = () => {
         </span>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-left text-sm">
+      {/* ========================================= */}
+      {/* 📱 MOBILE VIEW (Stacked Cards) */}
+      {/* ========================================= */}
+      <div className="block sm:hidden divide-y divide-gray-100">
+        {Array.isArray(orders) && orders.length > 0 ? (
+          orders.map((order) => {
+            let productData = null;
+            if (order.productId && typeof order.productId === 'object') productData = order.productId;
+            else if (order.product && typeof order.product === 'object') productData = order.product;
+            
+            const displayTitle = productData ? productData.title : "(Product Deleted)";
+            const productPrice = productData ? productData.price : 0;
+            const totalBill = productPrice * order.quantity;
+
+            return (
+              <div key={order._id} className="p-4 flex flex-col gap-3 bg-white hover:bg-gray-50 transition">
+                
+                {/* Header: Name & Total */}
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="font-bold text-gray-800 text-base">{order.customerName}</div>
+                    <div className="text-xs text-gray-500">{order.phone}</div>
+                  </div>
+                  <div className="font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md border border-green-100 text-sm">
+                    PKR {totalBill}
+                  </div>
+                </div>
+
+                {/* Address Box */}
+                <div className="text-xs text-gray-600 bg-gray-50 p-2.5 rounded-lg border border-gray-100 flex gap-2">
+                  <FaMapMarkerAlt className="text-gray-400 mt-0.5 flex-shrink-0" />
+                  <span className="leading-tight">{order.address}</span>
+                </div>
+
+                {/* Item & Payment */}
+                <div className="flex justify-between items-end border-t border-gray-50 pt-2">
+                  <div>
+                    <div className={`text-sm font-bold ${!productData ? 'text-orange-500 italic' : 'text-gray-700'}`}>
+                      {displayTitle}
+                    </div>
+                    <div className="text-xs text-gray-500">Qty: {order.quantity}</div>
+                  </div>
+                  <div>
+                    {order.paymentMethod === 'COD' ? (
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-gray-500 bg-gray-200 px-2 py-1 rounded-md">
+                        <FaMoneyBillWave /> COD
+                      </span>
+                    ) : (
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-md">
+                          <FaCreditCard /> Online
+                        </span>
+                        {order.screenshotUrl && order.screenshotUrl !== "OCR_VERIFIED" && order.screenshotUrl !== "OCR_AMOUNT_MATCHED" ? (
+                           <button onClick={() => openScreenshot(order.screenshotUrl)} className="text-[10px] text-blue-600 flex items-center gap-1 font-bold underline">
+                             View Proof
+                           </button>
+                        ) : (
+                           (order.screenshotUrl === "OCR_VERIFIED" || order.screenshotUrl === "OCR_AMOUNT_MATCHED") && (
+                             <span className="text-[9px] text-green-600 flex items-center gap-1 font-bold">
+                               <FaCheckCircle /> Verified
+                             </span>
+                           )
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => handlePrint(order)} className="flex-1 py-2 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center border border-blue-100 active:bg-blue-100 active:scale-95 transition-transform"><FaFilePdf size={16} /></button>
+                  <button onClick={() => handleShipOrder(order._id)} className="flex-1 py-2 bg-green-50 text-green-600 rounded-lg flex items-center justify-center border border-green-100 active:bg-green-100 active:scale-95 transition-transform"><FaCheckCircle size={16} /></button>
+                  <button onClick={() => handleReturn(order)} className="flex-1 py-2 bg-red-50 text-red-600 rounded-lg flex items-center justify-center border border-red-100 active:bg-red-100 active:scale-95 transition-transform"><FaUndo size={16} /></button>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="p-8 text-center text-gray-500 italic text-sm">No orders found.</div>
+        )}
+      </div>
+
+      {/* ========================================= */}
+      {/* 💻 DESKTOP VIEW (Standard Table) */}
+      {/* ========================================= */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-left text-sm">
           <thead className="bg-gray-100 text-gray-600 uppercase font-bold">
             <tr>
-              <th className="p-3 sm:p-4 whitespace-nowrap">Customer</th>
-              <th className="p-3 sm:p-4 whitespace-nowrap">Item</th>
-              <th className="p-3 sm:p-4 whitespace-nowrap">Total</th>
-              <th className="p-3 sm:p-4 whitespace-nowrap">Payment</th>
-              <th className="p-3 sm:p-4 text-center whitespace-nowrap">Actions</th>
+              <th className="p-4">Customer</th>
+              <th className="p-4">Item</th>
+              <th className="p-4">Total</th>
+              <th className="p-4">Payment</th>
+              <th className="p-4 text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {Array.isArray(orders) && orders.length > 0 ? (
               orders.map((order) => {
                 let productData = null;
-                let displayTitle = "";
-                
-                if (order.productId && typeof order.productId === 'object') {
-                  productData = order.productId;
-                } else if (order.product && typeof order.product === 'object') {
-                  productData = order.product;
-                }
+                if (order.productId && typeof order.productId === 'object') productData = order.productId;
+                else if (order.product && typeof order.product === 'object') productData = order.product;
 
-                if (productData) {
-                  displayTitle = productData.title;
-                } else {
-                  const rawId = order.productId || order.product;
-                  displayTitle = rawId ? `(ID: ${rawId.toString().slice(-6)}...)` : "(Product Deleted)";
-                }
-
+                const displayTitle = productData ? productData.title : "(Product Deleted)";
                 const productPrice = productData ? productData.price : 0;
                 const totalBill = productPrice * order.quantity;
                 const isDataMissing = !productData;
 
                 return (
                   <tr key={order._id} className="hover:bg-blue-50 transition group">
-                    <td className="p-3 sm:p-4 min-w-[150px]">
+                    <td className="p-4">
                       <div className="font-bold text-gray-800">{order.customerName}</div>
                       <div className="text-xs text-gray-500">{order.phone}</div>
-                      <div className="text-xs text-gray-400 truncate w-32 sm:w-40" title={order.address}>{order.address}</div>
+                      <div className="text-xs text-gray-400 truncate w-40" title={order.address}>{order.address}</div>
                     </td>
 
-                    <td className="p-3 sm:p-4 min-w-[120px]">
+                    <td className="p-4">
                       <div className={`font-medium ${isDataMissing ? 'text-orange-500 italic' : 'text-gray-700'}`}>
                         {displayTitle}
                       </div>
                       <div className="text-xs text-gray-500">Qty: {order.quantity}</div>
                     </td>
 
-                    <td className="p-3 sm:p-4 font-bold text-green-600 whitespace-nowrap">
+                    <td className="p-4 font-bold text-green-600">
                       PKR {totalBill}
                     </td>
 
-                    <td className="p-3 sm:p-4 min-w-[100px]">
+                    <td className="p-4">
                       {order.paymentMethod === 'COD' ? (
                         <span className="flex items-center gap-1 text-xs font-bold text-gray-500 bg-gray-200 px-2 py-1 rounded-md w-max">
                           <FaMoneyBillWave /> COD
@@ -233,7 +302,6 @@ const OrderList = () => {
                           <span className="flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-md w-max">
                             <FaCreditCard /> Online
                           </span>
-                          
                           {order.screenshotUrl && order.screenshotUrl !== "OCR_VERIFIED" && order.screenshotUrl !== "OCR_AMOUNT_MATCHED" ? (
                              <button onClick={() => openScreenshot(order.screenshotUrl)} className="text-[10px] text-blue-600 flex items-center gap-1 font-bold hover:underline cursor-pointer bg-blue-50 px-2 py-1 rounded border border-blue-100">
                                <FaEye /> View Proof
@@ -249,36 +317,11 @@ const OrderList = () => {
                       )}
                     </td>
 
-                    <td className="p-3 sm:p-4">
-                      {/* RESPONSIVE ACTION BUTTONS */}
-                      <div className="flex justify-center items-center gap-2 sm:gap-3">
-                        <button 
-                          onClick={() => handlePrint(order)} 
-                          className={`p-2 sm:p-3 rounded-xl shadow-md transition transform active:scale-95 flex items-center justify-center
-                            ${isDataMissing 
-                              ? 'bg-orange-100 text-orange-400 cursor-not-allowed opacity-50' 
-                              : 'bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-200'
-                            }`}
-                          title="Download Invoice"
-                        >
-                          <FaFilePdf size={18} />
-                        </button>
-
-                        <button 
-                          onClick={() => handleShipOrder(order._id)} 
-                          className="p-2 sm:p-3 bg-green-100 text-green-600 rounded-xl shadow-md border border-green-200 hover:bg-green-600 hover:text-white transition transform active:scale-95 flex items-center justify-center"
-                          title="Mark Shipped"
-                        >
-                          <FaCheckCircle size={18} />
-                        </button>
-
-                        <button 
-                          onClick={() => handleReturn(order)} 
-                          className="p-2 sm:p-3 bg-red-100 text-red-600 rounded-xl shadow-md border border-red-200 hover:bg-red-600 hover:text-white transition transform active:scale-95 flex items-center justify-center"
-                          title="Return / Restock"
-                        >
-                          <FaUndo size={18} />
-                        </button>
+                    <td className="p-4">
+                      <div className="flex justify-center items-center gap-3">
+                        <button onClick={() => handlePrint(order)} className={`p-3 rounded-xl shadow-md active:scale-95 transition flex items-center justify-center ${isDataMissing ? 'bg-orange-100 text-orange-400 cursor-not-allowed opacity-50' : 'bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-200'}`} title="Download Invoice"><FaFilePdf size={18} /></button>
+                        <button onClick={() => handleShipOrder(order._id)} className="p-3 bg-green-100 text-green-600 rounded-xl shadow-md border border-green-200 hover:bg-green-600 hover:text-white active:scale-95 transition flex items-center justify-center" title="Mark Shipped"><FaCheckCircle size={18} /></button>
+                        <button onClick={() => handleReturn(order)} className="p-3 bg-red-100 text-red-600 rounded-xl shadow-md border border-red-200 hover:bg-red-600 hover:text-white active:scale-95 transition flex items-center justify-center" title="Return / Restock"><FaUndo size={18} /></button>
                       </div>
                     </td>
                   </tr>
@@ -286,24 +329,20 @@ const OrderList = () => {
               })
             ) : (
               <tr>
-                <td colSpan="5" className="p-8 text-center text-gray-500 italic">
-                  No orders found.
-                </td>
+                <td colSpan="5" className="p-8 text-center text-gray-500 italic">No orders found.</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
 
+      {/* Screenshot Modal */}
       {screenshotModal.isOpen && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-fade-in"
           onClick={() => setScreenshotModal({ ...screenshotModal, isOpen: false })}
         >
-          <button 
-            className="absolute top-5 right-5 text-white bg-white/20 hover:bg-white/40 rounded-full p-3 transition"
-            onClick={() => setScreenshotModal({ ...screenshotModal, isOpen: false })}
-          >
+          <button className="absolute top-5 right-5 text-white bg-white/20 hover:bg-white/40 rounded-full p-3 transition" onClick={() => setScreenshotModal({ ...screenshotModal, isOpen: false })}>
             <FaTimes size={24} />
           </button>
           <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
